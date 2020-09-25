@@ -1,10 +1,8 @@
 <?php
         
-$ean_code = "5010646061186";
-
 function getGammaProduct($ean_code){
         $gamma_base = "https://www.gamma.be/nl/assortiment/zoeken?text=";
-        $html = file_get_contents($gamma_base . $ean_code);
+        $html = file_get_contents($gamma_base . str_replace(' ', '', $ean_code));
 
         /*** a new dom object ***/ 
         $dom = new DOMDocument; 
@@ -25,7 +23,7 @@ function getGammaProduct($ean_code){
 
         /*** loop over the table rows ***/ 
         foreach ($articles as $article) {
-                if( $article->getAttribute('data-ean') == $ean_code){
+                if( $article->getAttribute('data-ean') == str_replace(' ', '', $ean_code)){
                         // Search all A for url
                         foreach ($article->getElementsByTagName('a') as $article_link) {
                                 if($article_link->getAttribute('class') == "click-mask"){
@@ -51,9 +49,29 @@ function getGammaProduct($ean_code){
                 }
         }
 
-        return $article_meta;
+        return isset($article_meta['name']) ? $article_meta : NULL ;
 }
 
 
-print("<strong>Product Data</strong>: ");
-print_r(getGammaProduct($ean_code));
+if (isset($_POST['ean_code']))
+        $product_data = getGammaProduct($_POST['ean_code']);
+
+?>
+
+<h1>Search Product </h1>
+<form method="POST" action="">
+        <input type="text" name="ean_code" value="">
+        <input type="submit" name="submit" value="Search">
+</form>
+
+<?php  if (isset($_POST['ean_code']) && $product_data != NULL){ ?>
+
+        <h2>Result</h2>
+        <table>
+        <tr> <th>Name</th> <td> <?php echo $product_data['name'] ?> </td> </tr>
+        <tr> <th>Image</th> <td> <img src="<?php echo $product_data['img'] ?>" /> </td> </tr>
+        <tr> <th>Price</th> <td> <?php echo $product_data['price'] ?> </td> </tr>
+        </table>
+
+<?php } ?>
+
